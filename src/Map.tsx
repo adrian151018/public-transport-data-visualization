@@ -1,6 +1,16 @@
 import { MapContainer, Marker, Popup, TileLayer} from "react-leaflet";
 
-export default function Map() {
+export function AddMarker({lat, lon}: {lat?: number, lon?: number}) {
+  if((lat === undefined) || (lon === undefined))return null;
+
+  return (
+    <Marker position={[lat, lon]}></Marker>
+  );
+}
+
+export function Map({stopLat, stopLon}: {stopLat?: number, stopLon?: number}) {
+  
+  
   return (
     <MapContainer center={[42.69, 23.32]} zoom={12} scrollWheelZoom={false}>
       <TileLayer
@@ -12,6 +22,7 @@ export default function Map() {
           This is a popup
         </Popup>
       </Marker>
+      <AddMarker lat={stopLat} lon={stopLon}></AddMarker> 
     </MapContainer>
   );
 }
