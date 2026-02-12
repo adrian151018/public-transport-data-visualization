@@ -1,14 +1,19 @@
 import { MapContainer, Marker, Popup, TileLayer} from "react-leaflet";
+import type { Stop } from "./models/StopModel";
 
-export function AddMarker({lat, lon}: {lat?: number, lon?: number}) {
-  if((lat === undefined) || (lon === undefined))return null;
+export function AddMarker({stop}: {stop?: Stop}) {
+  if(!stop)return null;
 
   return (
-    <Marker position={[lat, lon]}></Marker>
+    <Marker position={[Number(stop.stopLat), Number(stop.stopLon)]}>
+      <Popup>
+        ({stop.stopCode}) {stop.stopName}
+      </Popup>
+    </Marker>
   );
 }
 
-export function Map({stopLat, stopLon}: {stopLat?: number, stopLon?: number}) {
+export function Map({stop}: {stop?: Stop}) {
   
   
   return (
@@ -17,12 +22,7 @@ export function Map({stopLat, stopLon}: {stopLat?: number, stopLon?: number}) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Marker position={[42.69, 23.32]}>
-        <Popup>
-          This is a popup
-        </Popup>
-      </Marker>
-      <AddMarker lat={stopLat} lon={stopLon}></AddMarker> 
+      <AddMarker stop={stop}></AddMarker> 
     </MapContainer>
   );
 }

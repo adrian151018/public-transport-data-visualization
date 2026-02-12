@@ -24,7 +24,7 @@ export async function searchStops(stopCode: string){
     const stops = await getStops();
     for(var stop of stops){
         if(stop.stopCode === stopCode){
-            return [stop.stopLat, stop.stopLon];
+            return stop;
         }
     }
     return undefined;
