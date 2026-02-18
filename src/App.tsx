@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import './App.css'
 import { Map } from './Map.tsx'
-import { searchStops } from './service/stop.ts';
+import { getRouteStopTimes, getStopByCode } from './service/utils.ts';
 import { Stop } from './models/StopModel.ts';
+import { Scheduled } from './models/ScheduledModel.ts';
 
 function App() {
   const [searchOption, setSearchOption] = useState("... ");
   const [input, setInput] = useState("");
-  const [singleStop, setSingleStop] = useState<Stop | undefined>(new Stop("", "", "", "", ""));
+  const [singleStop, setSingleStop] = useState<Stop | undefined>(undefined);
+  const [stopSchedule, setStopSchedule] = useState<Scheduled[] | undefined>(undefined);
 
   return (
     <div>
@@ -16,22 +18,32 @@ function App() {
       </div>
       <div>
         <label htmlFor="search">Search for {searchOption}: </label>
-        <input type="text" id="search" placeholder='Search...' value={input} onChange={(code) => {
-            if(code.target.value){
-              searchStops(code.target.value)
-                .then((stop) => {
-                  setSingleStop(stop ? stop : undefined);
+        <input type="text" id="search" placeholder='Search...' 
+          value={input} 
+          onChange={code => setInput(code.target.value)}
+          onKeyDown={pressed => {
+            if(pressed.key === "Enter" && input){
+              getStopByCode(input)
+                .then(stop => {
+                  setSingleStop(stop);
+                  return stop;
+                })
+                .then(stop => {
+                  if(stop){
+                    getRouteStopTimes(stop.stopCode)
+                      .then(scheduled => {
+                        setStopSchedule(scheduled);
+                    })
+                  }
+                  else setStopSchedule(undefined);
                 })
             }
-            else{
-              setSingleStop(undefined);
-            }
-            setInput(code.target.value);
-          }
-        }/>
+            else setSingleStop(undefined);
+          }}  
+        />
       </div>
       <div id="map">
-        <Map stop={singleStop}/>
+        <Map stop={singleStop} schedule={stopSchedule}/>
       </div>
     </div>
   )

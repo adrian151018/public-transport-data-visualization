@@ -1,19 +1,30 @@
 import { MapContainer, Marker, Popup, TileLayer} from "react-leaflet";
 import type { Stop } from "./models/StopModel";
+import type { Scheduled } from "./models/ScheduledModel";
 
-export function AddMarker({stop}: {stop?: Stop}) {
+function AddMarker({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
   if(!stop)return null;
+  schedule?.sort((entry1, entry2) => entry1.arrivalTime.localeCompare(entry2.arrivalTime))
 
   return (
     <Marker position={[Number(stop.stopLat), Number(stop.stopLon)]}>
       <Popup>
         ({stop.stopCode}) {stop.stopName}
+        <br/>
+        <br/>
+        Coming next five: 
+        <br/>
+        {schedule && schedule[0].trip.route.routeShort + " at " + schedule[0].arrivalTime}<br/>
+        {schedule && schedule[1].trip.route.routeShort + " at " + schedule[1].arrivalTime}<br/>
+        {schedule && schedule[2].trip.route.routeShort + " at " + schedule[2].arrivalTime}<br/>
+        {schedule && schedule[3].trip.route.routeShort + " at " + schedule[3].arrivalTime}<br/>
+        {schedule && schedule[4].trip.route.routeShort + " at " + schedule[4].arrivalTime}
       </Popup>
     </Marker>
   );
 }
 
-export function Map({stop}: {stop?: Stop}) {
+export function Map({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
   
   
   return (
@@ -22,7 +33,7 @@ export function Map({stop}: {stop?: Stop}) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <AddMarker stop={stop}></AddMarker> 
+      <AddMarker stop={stop} schedule={schedule}></AddMarker> 
     </MapContainer>
   );
 }
