@@ -4,6 +4,7 @@ import { Scheduled } from "./models/ScheduledModel";
 
 function AddMarker({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
   if(!stop)return null;
+  schedule?.sort((entry1, entry2) => entry1.arrivalTime.localeCompare(entry2.arrivalTime))
   schedule?.forEach(scheduled => {
     if(Number(scheduled.arrivalTime.replaceAll(":", "")) > 240000){
       const oldArrival = Number(scheduled.arrivalTime.replaceAll(":", ""));
@@ -24,7 +25,6 @@ function AddMarker({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
       }
     }
   })
-  schedule?.sort((entry1, entry2) => entry1.arrivalTime.localeCompare(entry2.arrivalTime))
   const day = new Date();
   const now = Number(((day.getHours() === 0) ? "24" : String(day.getHours())) + String(day.getMinutes()) + "00");
   const next = [];

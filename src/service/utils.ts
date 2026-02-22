@@ -3,7 +3,7 @@ import { Route } from "../models/RouteModel";
 import { Scheduled } from "../models/ScheduledModel";
 import { Stop } from "../models/StopModel";
 import { Trip } from "../models/TripModel";
-import { fetchStatic, loadRoutes, loadServices, loadStops, loadStopTimes, loadTrips } from "./fetch";
+import { loadRoutes, loadServices, loadStops, loadStopTimes, loadTrips } from "./fetch";
 
 export function getStopByCode(zipFile: JSZip, stopCode: string){
     if(!stopCode)return undefined;
@@ -18,6 +18,7 @@ export function getStopByCode(zipFile: JSZip, stopCode: string){
                     return new Stop(stop[0], stop[1], stop[2], stop[4], stop[5]);
                 }
             }
+            console.log("cannot find stop " + stopCode);
             return undefined;
         })
     
@@ -57,12 +58,15 @@ function getTripsForToday(zipFile: JSZip){
 function getTripsByIds(zipFile: JSZip, tripIds: string[]){
     return loadTrips(zipFile)
         .then(parsedTrips => {
-            const tripIdsSet = new Set(tripIds);
-            const routeIds: string[] = [];
+            const routeIds: (string | undefined)[]= [];
+            const trips: Map<string, string> = new Map();
             parsedTrips.data.shift();
-            const trips = parsedTrips.data.filter(trip => tripIdsSet.has(trip[0]));
-            trips.forEach(trip => {
-                routeIds.push(trip[1]);
+            parsedTrips.data.forEach(trip =>{
+                trips.set(trip[0], trip[1]);
+            })
+            const tripsSet = new Set(trips.keys());
+            tripIds.forEach(id => {
+                if(tripsSet.has(id))routeIds.push(trips.get(id));
             })
             return loadRoutes(zipFile)
                 .then(parsedRoutes => {
@@ -76,8 +80,8 @@ function getTripsByIds(zipFile: JSZip, tripIds: string[]){
                             routeMap.set(parsedRoutes.data[i][0], newRoute);
                         }
                     }
-                    trips.forEach(trip => {
-                        newTrips.push(new Trip(trip[0], routeMap.get(trip[1])));
+                    tripIds.forEach(trip => {
+                        newTrips.push(new Trip(trip, routeMap.get(trips.get(trip))));
                     })
                     return newTrips;
                 })
@@ -117,8 +121,3 @@ export function getRouteStopTimes(zipFile: JSZip, stopCode: string){
         })
         
 }
-// fetchStatic()
-//     .then(zip => {
-//         getRouteStopTimes(zip, "1")
-//             .then(st => console.log(st))
-//     })

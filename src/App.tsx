@@ -32,20 +32,22 @@ function App() {
           onChange={code => setInput(code.target.value)}
           onKeyDown={pressed => {
             if(pressed.key === "Enter" && input){
-              getStopByCode(staticZip, input)
-                .then(stop => {
-                  setSingleStop(stop);
-                  return stop;
-                })
-                .then(stop => {
-                  if(stop){
-                    getRouteStopTimes(staticZip, stop.stopCode)
-                      .then(scheduled => {
-                        setStopSchedule(scheduled);
-                    })
-                  }
-                  else setStopSchedule(undefined);
-                })
+              if(searchOption === "stops"){  
+                getStopByCode(staticZip, input)
+                  .then(stop => {
+                    setSingleStop(stop);
+                    return stop;
+                  })
+                  .then(stop => {
+                    if(stop){
+                      getRouteStopTimes(staticZip, stop.stopCode)
+                        .then(scheduled => {
+                          setStopSchedule(scheduled);
+                      })
+                    }
+                    else setStopSchedule(undefined);
+                  })
+                }
             }
             else setSingleStop(undefined);
           }}  
