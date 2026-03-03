@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { Map } from './Map.tsx'
-import { getRouteStopTimes, getStopByCode } from './service/utils.ts';
+import { Map as WorldMap } from './Map.tsx'
+import { getAllStopsSchedules, getStopSchedule, getStopByCode } from './service/utils.ts';
 import { Stop } from './models/StopModel.ts';
 import { Scheduled } from './models/ScheduledModel.ts';
 import { fetchStatic } from './service/fetch.ts';
@@ -11,19 +11,36 @@ function App() {
   const [searchOption, setSearchOption] = useState("... ");
   const [input, setInput] = useState("");
   const [singleStop, setSingleStop] = useState<Stop | undefined>(undefined);
-  const [stopSchedule, setStopSchedule] = useState<Scheduled[] | undefined>(undefined);
+  const [stopSchedule, setStopSchedule] = useState<Scheduled[]>([]);
   const [staticZip, setStaticZip] = useState<JSZip>(new JSZip());
+  const [stops, setStops] = useState<Map<Stop, Scheduled[]>| undefined>(undefined);
   
 
   useEffect(() => {
     fetchStatic()
-      .then(loadedZip => setStaticZip(loadedZip))
+      .then(loadedZip => {
+        setStaticZip(loadedZip);
+      })
   }, []);
 
   return (
     <div>
       <div>
         <button onClick={() => setSearchOption("stops")}>Stops</button>
+      </div>
+      <div>
+        <label htmlFor="stops">Show all stops</label>
+        <input type="checkbox" id="stops" onChange={changed => {
+          if(changed.target.checked){
+            getAllStopsSchedules(staticZip)
+              .then(all => {
+                setStops(all);
+                setSingleStop(undefined);
+                setStopSchedule([]);
+              })
+          }
+        }}
+        />
       </div>
       <div>
         <label htmlFor="search">Search for {searchOption}: </label>
@@ -33,6 +50,7 @@ function App() {
           onKeyDown={pressed => {
             if(pressed.key === "Enter" && input){
               if(searchOption === "stops"){  
+                setStops(undefined);
                 getStopByCode(staticZip, input)
                   .then(stop => {
                     setSingleStop(stop);
@@ -40,12 +58,12 @@ function App() {
                   })
                   .then(stop => {
                     if(stop){
-                      getRouteStopTimes(staticZip, stop.stopCode)
+                      getStopSchedule(staticZip, stop.stopCode)
                         .then(scheduled => {
                           setStopSchedule(scheduled);
                       })
                     }
-                    else setStopSchedule(undefined);
+                    else setStopSchedule([]);
                   })
                 }
             }
@@ -54,7 +72,7 @@ function App() {
         />
       </div>
       <div id="map">
-        <Map stop={singleStop} schedule={stopSchedule}/>
+        <WorldMap stop={singleStop} schedule={stopSchedule} stops={stops}/>
       </div>
     </div>
   )

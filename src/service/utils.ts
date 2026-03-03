@@ -11,113 +11,147 @@ export function getStopByCode(zipFile: JSZip, stopCode: string){
         .then(parsedStops => {
             parsedStops.data.shift();
             parsedStops.data.pop();
-            console.log("Starting search for stop " + stopCode);
             for(var stop of parsedStops.data){
-                if(stop[1] === stopCode){
-                    console.log("found stop " + stopCode);
-                    return new Stop(stop[0], stop[1], stop[2], stop[4], stop[5]);
+                if(stop["stop_code"] === stopCode){
+                    return new Stop(stop["stop_id"], stop["stop_code"], stop["stop_name"], Number(stop["stop_lat"]), Number(stop["stop_lon"]));
                 }
             }
-            console.log("cannot find stop " + stopCode);
             return undefined;
         })
-    
 }
 
-function getServicesForToday(zipFile: JSZip){
+async function getServicesForToday(zipFile: JSZip, servicesFile: Papa.ParseResult<unknown> | undefined = undefined){
     const monthToNumber = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-    return loadServices(zipFile)
-        .then(parsedServices => {
-            const todaysServices: string[] = [];
-            const time = new Date();
-            const today = 
-                time.getFullYear().toString() 
-                + monthToNumber[time.getMonth()]
-                + time.getDate().toString();
-            parsedServices.data.shift();
-            for(var service of parsedServices.data){
-                if(service[1] === today)todaysServices.push(service[0]);
+    const parsedServices = servicesFile ? servicesFile : await loadServices(zipFile);
+    const todaysServices: string[] = [];
+    const time = new Date();
+    const day = (time.getDate() > 9) ? time.getDate().toString() : ("0" + time.getDate().toString());
+    const today = 
+        time.getFullYear().toString() 
+        + monthToNumber[time.getMonth()]
+        + day;
+    if(!servicesFile)parsedServices.data.shift();
+    for(var service of parsedServices.data){
+        if(service["date"] === today)todaysServices.push(service["service_id"]);
+    }
+    return todaysServices;
+}
+
+async function getTripsForToday(zipFile: JSZip, tripsFile: Papa.ParseResult<unknown> | undefined = undefined, servicesFile: Papa.ParseResult<unknown> | undefined = undefined){
+    const parsedTrips = tripsFile ? tripsFile : await loadTrips(zipFile);
+    if(!tripsFile)parsedTrips.data.shift();
+    return getServicesForToday(zipFile, servicesFile)
+        .then(services => {
+            const serviceSet = new Set(services);
+            return parsedTrips.data.filter(trip => serviceSet.has(trip["service_id"]));
+        })
+}
+
+async function getTripsByIds(zipFile: JSZip, tripsFile: Papa.ParseResult<unknown> | undefined = undefined, routesFile: Papa.ParseResult<unknown> | undefined = undefined, tripIds: string[]){
+        const parsedTrips = tripsFile ? tripsFile : await loadTrips(zipFile);
+        const routeIds: (string | undefined)[]= [];
+        const trips: Map<string, string> = new Map();
+        if(!tripsFile)parsedTrips.data.shift();
+        parsedTrips.data.forEach(trip => {
+            trips.set(trip["trip_id"], trip["route_id"]);            
+        })
+        const tripsSet = new Set(tripIds);
+        parsedTrips.data.forEach(id => {
+            if(tripsSet.has(id["trip_id"]))routeIds.push(trips.get(id["trip_id"]));            
+        })
+        const parsedRoutes = routesFile ? routesFile : await loadRoutes(zipFile);
+        const routeIdsSet = new Set(routeIds);
+        const newTrips: Trip[] = [];
+        const routeMap: Map<string, Route> = new Map();
+        if(!routesFile)parsedRoutes.data.shift();
+        parsedRoutes.data.forEach(route => {
+            if(routeIdsSet.has(route["route_id"])){
+                routeMap.set(route["route_id"], new Route(route["route_id"], route["route_short_name"], route["route_long_name"]));                        
             }
-            return todaysServices;
-        }
-    )
-}
-
-function getTripsForToday(zipFile: JSZip){
-    return loadTrips(zipFile)
-        .then(parsedTrips => {
-            parsedTrips.data.shift();
-            return getServicesForToday(zipFile)
-                .then(services => {
-                    const serviceSet = new Set(services);
-                    return parsedTrips.data.filter(trip => serviceSet.has(trip[2]))
-                })
         })
-}
-
-function getTripsByIds(zipFile: JSZip, tripIds: string[]){
-    return loadTrips(zipFile)
-        .then(parsedTrips => {
-            const routeIds: (string | undefined)[]= [];
-            const trips: Map<string, string> = new Map();
-            parsedTrips.data.shift();
-            parsedTrips.data.forEach(trip =>{
-                trips.set(trip[0], trip[1]);
-            })
-            const tripsSet = new Set(trips.keys());
-            tripIds.forEach(id => {
-                if(tripsSet.has(id))routeIds.push(trips.get(id));
-            })
-            return loadRoutes(zipFile)
-                .then(parsedRoutes => {
-                    const routeIdsSet = new Set(routeIds);
-                    const newTrips: Trip[] = [];
-                    const routeMap: Map<string, Route> = new Map();
-                    parsedRoutes.data.shift();
-                    for(var i in parsedRoutes.data){
-                        if(routeIdsSet.has(parsedRoutes.data[i][0])){
-                            const newRoute = new Route(parsedRoutes.data[i][0], parsedRoutes.data[i][2], parsedRoutes.data[i][3]);
-                            routeMap.set(parsedRoutes.data[i][0], newRoute);
-                        }
-                    }
-                    tripIds.forEach(trip => {
-                        newTrips.push(new Trip(trip, routeMap.get(trips.get(trip))));
-                    })
-                    return newTrips;
-                })
+        tripIds.forEach(trip => {
+            const route = trips.get(trip);
+            const routeobj = routeMap.get(route);
+            newTrips.push(new Trip(trip, routeobj));                    
         })
+        return newTrips;
 }
 
-export function getRouteStopTimes(zipFile: JSZip, stopCode: string){
-    return getTripsForToday(zipFile)
-        .then(tripsToday => {
-            console.log("Got todays trips!");
-            return loadStopTimes(zipFile)
-                .then(parsedStopTimes => {
-                    console.log("got stop times");
+export function getStopSchedule(zipFile: JSZip, stopCode: string, tripsFile: Papa.ParseResult<unknown> | undefined = undefined, servicesFile: Papa.ParseResult<unknown> | undefined = undefined, routesFile: Papa.ParseResult<unknown> | undefined = undefined, stopTimesFile: Papa.ParseResult<unknown> | undefined = undefined){
+    return getTripsForToday(zipFile, tripsFile, servicesFile)
+        .then(async tripsToday => {
+            const parsedStopTimes = stopTimesFile ? stopTimesFile : await loadStopTimes(zipFile);
                     const tripsTodayIdSet = new Set();
                     const todaysTripsToStop: string[] = []
                     const filteredStopTimes: unknown[] = [];
                     const schedule: Scheduled[] = [];
                     
                     tripsToday.forEach(trip => {
-                        tripsTodayIdSet.add(trip[0]);
+                        tripsTodayIdSet.add(trip["trip_id"]);
                     })
                     parsedStopTimes.data.shift();
                     for(var entry of parsedStopTimes.data){
-                        if((tripsTodayIdSet.has(entry[0])) && (String(entry[3]).replace(/\D/g, "") === stopCode)){
-                            todaysTripsToStop.push(entry[0]);
+                        if((tripsTodayIdSet.has(entry["trip_id"])) && (String(entry["stop_id"]).replace(/\D/g, "") === stopCode)){
+                            todaysTripsToStop.push(entry["trip_id"]);
                             filteredStopTimes.push(entry);
                         }
                     }
-                    return getTripsByIds(zipFile, todaysTripsToStop)
+                    return getTripsByIds(zipFile, tripsFile, routesFile, todaysTripsToStop)
                         .then(trips => {
                             for(var i in filteredStopTimes){
-                                schedule.push(new Scheduled(trips[i], filteredStopTimes[i][1], stopCode));
+                                schedule.push(new Scheduled(trips[i], filteredStopTimes[i]["arrival_time"], stopCode));
                             }
                             return schedule;
                         })
-                })
         })
         
+}
+
+export async function getAllStopsSchedules(zipFile: JSZip){
+    const parsedStopTimes = await loadStopTimes(zipFile);
+    parsedStopTimes.data.shift();
+    const parsedTrips = await loadTrips(zipFile);
+    parsedTrips.data.shift();
+    const parsedRoutes = await loadRoutes(zipFile);
+    parsedRoutes.data.shift();
+    const tripsToday = await getTripsForToday(zipFile, parsedTrips);
+    const stopMap: Map<Stop, Scheduled[]> = new Map();
+
+    return loadStops(zipFile)
+        .then(async parsedStops => {
+            parsedStops.data.shift();
+            const stopsSet = new Set();
+            const stopPromises = parsedStops.data.map(stop => {
+                if(stop["stop_code"] && !stopsSet.has(stop["stop_code"]) && ((stop["location_type"] === "0") || (stop["location_type"] === "1"))){
+                    stopsSet.add(stop["stop_code"])
+                    const tripsTodayIdSet = new Set();
+                    const todaysTripsToStop: string[] = []
+                    const filteredStopTimes: unknown[] = [];
+                    const schedule: Scheduled[] = [];
+                    
+                    tripsToday.forEach(trip => {
+                        tripsTodayIdSet.add(trip["trip_id"]);
+                    })
+                    for(var entry of parsedStopTimes.data){
+                        if((tripsTodayIdSet.has(entry["trip_id"])) && (String(entry["stop_id"]).replace(/\D/g, "") === stop["stop_code"])){
+                            todaysTripsToStop.push(entry["trip_id"]);
+                            filteredStopTimes.push(entry);
+                        }
+                    }
+                    return getTripsByIds(zipFile, parsedTrips, parsedRoutes, todaysTripsToStop)
+                        .then(trips => {
+                            for(var i in filteredStopTimes){
+                                schedule.push(new Scheduled(trips[i], filteredStopTimes[i]["arrival_time"], stop["stop_code"]));
+                            }
+                            return schedule;
+                        })
+                        .then(schedule => {
+                            const stop1 = new Stop(stop["stop_id"], stop["stop_code"], stop["stop_name"], Number(stop["stop_lat"]), Number(stop["stop_lon"]));
+                            stopMap.set(stop1, schedule);
+                        })
+                }
+            })
+            await Promise.all(stopPromises);
+            return stopMap;
+        })
 }

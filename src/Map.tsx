@@ -29,14 +29,14 @@ function AddMarker({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
   const now = Number(((day.getHours() === 0) ? "24" : String(day.getHours())) + String(day.getMinutes()) + "00");
   const next = [];
   let mappedBuses = undefined;
-  let busesUL;
-  if(schedule){
+  let busesUL = undefined;
+  if(schedule?.length){
     let buses = 0;
     for(let i = 0; i < schedule?.length; i++){
       if(Number(schedule[i].arrivalTime.replace(/:/g, "")) > now){
         next.push(schedule[i]);
         buses++;
-      }
+      }   
       if(buses === 5)break;
     }
     mappedBuses = next.map(bus => <li>{bus.trip.route.routeShort + " at " + bus.arrivalTime}</li>)
@@ -44,31 +44,41 @@ function AddMarker({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
   }
 
   return (
-    <Marker position={[Number(stop.stopLat), Number(stop.stopLon)]}>
+    <Marker position={[stop.stopLat, stop.stopLon]}>
       <Popup>
         ({stop.stopCode}) {stop.stopName}
         <br/>
         <br/>
         Coming next five: 
         <br/>
-        {!schedule && "NO SCHEDULED BUSES FOR TODAY"}
-        {(schedule ? !schedule.length : true) ? "NO SCHEDULED BUSES FOR TODAY" : ""}
+        {!schedule?.length ? "NO SCHEDULED BUSES" : ""}
         {(next.length != 0) && busesUL}
       </Popup>
     </Marker>
   );
 }
 
-export function Map({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
-  
-  
+function AddStops({stops}: {stops: Map<Stop, Scheduled[]>}){
+  const allStops = Array.from(stops.keys()).map(key => {
+    return <AddMarker stop={key} schedule={stops.get(key)}></AddMarker>
+  })
+
+  return (
+    allStops
+  );
+}
+
+export function Map({stop, schedule, stops}: {stop?: Stop, schedule: Scheduled[], stops?: Map<Stop, Scheduled[]>}) {
+
   return (
     <MapContainer center={[42.69, 23.32]} zoom={12} scrollWheelZoom={false}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <AddMarker stop={stop} schedule={schedule}></AddMarker> 
+      {(stops && !stop) ? <AddStops stops={stops}></AddStops> : undefined}
+      {stop ? <AddMarker stop={stop} schedule={schedule}></AddMarker> : undefined}
+      
     </MapContainer>
   );
 }
