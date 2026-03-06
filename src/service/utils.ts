@@ -9,7 +9,6 @@ export function getStopByCode(zipFile: JSZip, stopCode: string){
     if(!stopCode)return undefined;
     return loadStops(zipFile)
         .then(parsedStops => {
-            parsedStops.data.shift();
             parsedStops.data.pop();
             for(var stop of parsedStops.data){
                 if(stop["stop_code"] === stopCode){
@@ -30,7 +29,6 @@ async function getServicesForToday(zipFile: JSZip, servicesFile: Papa.ParseResul
         time.getFullYear().toString() 
         + monthToNumber[time.getMonth()]
         + day;
-    if(!servicesFile)parsedServices.data.shift();
     for(var service of parsedServices.data){
         if(service["date"] === today)todaysServices.push(service["service_id"]);
     }
@@ -39,7 +37,6 @@ async function getServicesForToday(zipFile: JSZip, servicesFile: Papa.ParseResul
 
 async function getTripsForToday(zipFile: JSZip, tripsFile: Papa.ParseResult<unknown> | undefined = undefined, servicesFile: Papa.ParseResult<unknown> | undefined = undefined){
     const parsedTrips = tripsFile ? tripsFile : await loadTrips(zipFile);
-    if(!tripsFile)parsedTrips.data.shift();
     return getServicesForToday(zipFile, servicesFile)
         .then(services => {
             const serviceSet = new Set(services);
@@ -51,7 +48,6 @@ async function getTripsByIds(zipFile: JSZip, tripsFile: Papa.ParseResult<unknown
         const parsedTrips = tripsFile ? tripsFile : await loadTrips(zipFile);
         const routeIds: (string | undefined)[]= [];
         const trips: Map<string, string> = new Map();
-        if(!tripsFile)parsedTrips.data.shift();
         parsedTrips.data.forEach(trip => {
             trips.set(trip["trip_id"], trip["route_id"]);            
         })
@@ -63,7 +59,6 @@ async function getTripsByIds(zipFile: JSZip, tripsFile: Papa.ParseResult<unknown
         const routeIdsSet = new Set(routeIds);
         const newTrips: Trip[] = [];
         const routeMap: Map<string, Route> = new Map();
-        if(!routesFile)parsedRoutes.data.shift();
         parsedRoutes.data.forEach(route => {
             if(routeIdsSet.has(route["route_id"])){
                 routeMap.set(route["route_id"], new Route(route["route_id"], route["route_short_name"], route["route_long_name"]));                        
@@ -89,7 +84,6 @@ export function getStopSchedule(zipFile: JSZip, stopCode: string, tripsFile: Pap
                     tripsToday.forEach(trip => {
                         tripsTodayIdSet.add(trip["trip_id"]);
                     })
-                    parsedStopTimes.data.shift();
                     for(var entry of parsedStopTimes.data){
                         if((tripsTodayIdSet.has(entry["trip_id"])) && (String(entry["stop_id"]).replace(/\D/g, "") === stopCode)){
                             todaysTripsToStop.push(entry["trip_id"]);
@@ -109,20 +103,21 @@ export function getStopSchedule(zipFile: JSZip, stopCode: string, tripsFile: Pap
 
 export async function getAllStopsSchedules(zipFile: JSZip){
     const parsedStopTimes = await loadStopTimes(zipFile);
-    parsedStopTimes.data.shift();
     const parsedTrips = await loadTrips(zipFile);
-    parsedTrips.data.shift();
     const parsedRoutes = await loadRoutes(zipFile);
-    parsedRoutes.data.shift();
     const tripsToday = await getTripsForToday(zipFile, parsedTrips);
     const stopMap: Map<Stop, Scheduled[]> = new Map();
 
     return loadStops(zipFile)
         .then(async parsedStops => {
-            parsedStops.data.shift();
             const stopsSet = new Set();
             const stopPromises = parsedStops.data.map(stop => {
-                if(stop["stop_code"] && !stopsSet.has(stop["stop_code"]) && ((stop["location_type"] === "0") || (stop["location_type"] === "1"))){
+                if(
+                    stop["stop_code"] && !stopsSet.has(stop["stop_code"]) && 
+                    (
+                        (stop["location_type"] === "0") || (stop["location_type"] === "1")
+                    )
+                ){
                     stopsSet.add(stop["stop_code"])
                     const tripsTodayIdSet = new Set();
                     const todaysTripsToStop: string[] = []
@@ -133,7 +128,10 @@ export async function getAllStopsSchedules(zipFile: JSZip){
                         tripsTodayIdSet.add(trip["trip_id"]);
                     })
                     for(var entry of parsedStopTimes.data){
-                        if((tripsTodayIdSet.has(entry["trip_id"])) && (String(entry["stop_id"]).replace(/\D/g, "") === stop["stop_code"])){
+                        if(
+                            (tripsTodayIdSet.has(entry["trip_id"])) && 
+                            (String(entry["stop_id"]).replace(/\D/g, "") === stop["stop_code"])
+                        ){
                             todaysTripsToStop.push(entry["trip_id"]);
                             filteredStopTimes.push(entry);
                         }
@@ -141,12 +139,22 @@ export async function getAllStopsSchedules(zipFile: JSZip){
                     return getTripsByIds(zipFile, parsedTrips, parsedRoutes, todaysTripsToStop)
                         .then(trips => {
                             for(var i in filteredStopTimes){
-                                schedule.push(new Scheduled(trips[i], filteredStopTimes[i]["arrival_time"], stop["stop_code"]));
+                                schedule.push(
+                                    new Scheduled(trips[i], 
+                                    filteredStopTimes[i]["arrival_time"], 
+                                    stop["stop_code"])
+                                );
                             }
                             return schedule;
                         })
                         .then(schedule => {
-                            const stop1 = new Stop(stop["stop_id"], stop["stop_code"], stop["stop_name"], Number(stop["stop_lat"]), Number(stop["stop_lon"]));
+                            const stop1 = new Stop(
+                                stop["stop_id"], 
+                                stop["stop_code"], 
+                                stop["stop_name"], 
+                                Number(stop["stop_lat"]), 
+                                Number(stop["stop_lon"])
+                            );
                             stopMap.set(stop1, schedule);
                         })
                 }
@@ -155,3 +163,4 @@ export async function getAllStopsSchedules(zipFile: JSZip){
             return stopMap;
         })
 }
+

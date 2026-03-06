@@ -9,26 +9,26 @@ export function fetchStatic(){
 }
 
 export function loadStops(zipFile: JSZip){
-    return zipFile.file("stops.txt").async('string')
+    return zipFile.file("stops.txt")?.async('string')
         .then(content => Papa.parse(content, {header: true}))        
 }
 
 export function loadServices(zipFile: JSZip){
-    return zipFile.file("calendar_dates.txt").async('string')
+    return zipFile.file("calendar_dates.txt")?.async('string')
         .then(content => Papa.parse(content, {header: true}))
 }
 
 export function loadTrips(zipFile: JSZip){
-    return zipFile.file("trips.txt").async('string')
+    return zipFile.file("trips.txt")?.async('string')
         .then(content => Papa.parse(content, {header: true}))
 }
 
 export function loadRoutes(zipFile: JSZip){
-    return zipFile.file("routes.txt").async('string')
+    return zipFile.file("routes.txt")?.async('string')
         .then(content => Papa.parse(content, {header: true}))
 }
 
 export function loadStopTimes(zipFile: JSZip){
-    return zipFile.file("stop_times.txt").async('string')
+    return zipFile.file("stop_times.txt")?.async('string')
         .then(content => Papa.parse(content, {header: true}))
 }
