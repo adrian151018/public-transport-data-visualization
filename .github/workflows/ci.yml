@@ -2,7 +2,7 @@ name: CI
 
 on: [push]
 jobs: 
-  Linter + Build + Test
+  Linter-Build-Test:
     runs-on: ubuntu-latest
     steps: 
       - name: Checkout repository code
