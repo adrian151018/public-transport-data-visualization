@@ -12,7 +12,6 @@ export function loadStopData(zipFile: JSZip){
 
 export function getStopByCode(stops: unknown[], stopCode: string){
     if(!stopCode)return undefined;
-    stops.pop();
     for(var stop of stops){
         if(stop["stop_code"] === stopCode){
             return new Stop(
