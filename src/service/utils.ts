@@ -12,7 +12,7 @@ export function loadStopData(zipFile: JSZip){
 
 export function getStopByCode(stops: unknown[], stopCode: string){
     if(!stopCode)return undefined;
-    for(var stop of stops){
+    for(let stop of stops){
         if(stop["stop_code"] === stopCode){
             return new Stop(
                 stop["stop_id"], 
@@ -36,7 +36,7 @@ async function getServicesForToday(zipFile: JSZip, servicesFile: Papa.ParseResul
         time.getFullYear().toString() 
         + monthToNumber[time.getMonth()]
         + day;
-    for(var service of parsedServices.data){
+    for(let service of parsedServices.data){
         if(service["date"] === today)todaysServices.push(service["service_id"]);
     }
     return todaysServices;
@@ -106,7 +106,7 @@ export function getStopSchedule(
                     tripsToday.forEach(trip => {
                         tripsTodayIdSet.add(trip["trip_id"]);
                     })
-                    for(var entry of parsedStopTimes.data){
+                    for(let entry of parsedStopTimes.data){
                         if(
                             (tripsTodayIdSet.has(entry["trip_id"])) && 
                             (String(entry["stop_id"]).replace(/\D/g, "") === stopCode)
@@ -117,7 +117,7 @@ export function getStopSchedule(
                     }
                     return getTripsByIds(zipFile, tripsFile, routesFile, todaysTripsToStop)
                         .then(trips => {
-                            for(var i in filteredStopTimes){
+                            for(let i in filteredStopTimes){
                                 schedule.push(new Scheduled(trips[i], filteredStopTimes[i]["arrival_time"], stopCode));
                             }
                             return schedule;
@@ -152,7 +152,7 @@ export async function getAllStopsSchedules(zipFile: JSZip){
                     tripsToday.forEach(trip => {
                         tripsTodayIdSet.add(trip["trip_id"]);
                     })
-                    for(var entry of parsedStopTimes.data){
+                    for(let entry of parsedStopTimes.data){
                         if(
                             (tripsTodayIdSet.has(entry["trip_id"])) && 
                             (String(entry["stop_id"]).replace(/\D/g, "") === stop["stop_code"])
@@ -163,7 +163,7 @@ export async function getAllStopsSchedules(zipFile: JSZip){
                     }
                     return getTripsByIds(zipFile, parsedTrips, parsedRoutes, todaysTripsToStop)
                         .then(trips => {
-                            for(var i in filteredStopTimes){
+                            for(let i in filteredStopTimes){
                                 schedule.push(
                                     new Scheduled(trips[i], 
                                     filteredStopTimes[i]["arrival_time"], 

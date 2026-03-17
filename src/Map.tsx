@@ -10,8 +10,8 @@ function AddMarker({stop, schedule}: {stop?: Stop, schedule?: Scheduled[]}) {
       const oldArrival = Number(scheduled.arrivalTime.replaceAll(":", ""));
       const newArrival = (oldArrival - 240000);
       if(newArrival < 100000){
-        let parts = [];
-        let temp = "0" + newArrival.toString();
+        const parts = [];
+        const temp = "0" + newArrival.toString();
         parts.push(temp.slice(0, 2));
         parts.push(temp.slice(2, 4));
         parts.push(temp.slice(4, 6));
