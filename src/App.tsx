@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { Map as WorldMap } from './Map.tsx'
-import { getAllStopsSchedules, getStopSchedule, getStopByCode } from './service/utils.ts';
+import { getAllStopsSchedules, getStopSchedule, getStopByCode, loadStopData } from './service/utils.ts';
 import { Stop } from './models/StopModel.ts';
 import { Scheduled } from './models/ScheduledModel.ts';
 import { fetchStatic } from './service/fetch.ts';
@@ -51,21 +51,19 @@ function App() {
             if(pressed.key === "Enter" && input){
               if(searchOption === "stops"){  
                 setStops(undefined);
-                getStopByCode(staticZip, input)
-                  .then(stop => {
+                loadStopData(staticZip)
+                  .then(data => {
+                    const stop = getStopByCode(data, input)
                     setSingleStop(stop);
-                    return stop;
-                  })
-                  .then(stop => {
                     if(stop){
                       getStopSchedule(staticZip, stop.stopCode)
                         .then(scheduled => {
                           setStopSchedule(scheduled);
-                      })
+                        })
                     }
                     else setStopSchedule([]);
                   })
-                }
+              }
             }
             else setSingleStop(undefined);
           }}  

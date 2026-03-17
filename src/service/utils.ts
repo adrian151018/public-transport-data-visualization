@@ -5,24 +5,26 @@ import { Stop } from "../models/StopModel";
 import { Trip } from "../models/TripModel";
 import { loadRoutes, loadServices, loadStops, loadStopTimes, loadTrips } from "./fetch";
 
-export function getStopByCode(zipFile: JSZip, stopCode: string){
-    if(!stopCode)return undefined;
+export function loadStopData(zipFile: JSZip){
     return loadStops(zipFile)
-        .then(parsedStops => {
-            parsedStops.data.pop();
-            for(var stop of parsedStops.data){
-                if(stop["stop_code"] === stopCode){
-                    return new Stop(
-                        stop["stop_id"], 
-                        stop["stop_code"], 
-                        stop["stop_name"], 
-                        Number(stop["stop_lat"]), 
-                        Number(stop["stop_lon"])
-                    );
-                }
-            }
-            return undefined;
-        })
+        .then(parsedStops => parsedStops.data)
+}
+
+export function getStopByCode(stops: unknown[], stopCode: string){
+    if(!stopCode)return undefined;
+    stops.pop();
+    for(var stop of stops){
+        if(stop["stop_code"] === stopCode){
+            return new Stop(
+                stop["stop_id"], 
+                stop["stop_code"], 
+                stop["stop_name"], 
+                Number(stop["stop_lat"]), 
+                Number(stop["stop_lon"])
+            );
+        }
+    }
+    return undefined;
 }
 
 async function getServicesForToday(zipFile: JSZip, servicesFile: Papa.ParseResult<unknown> | undefined = undefined){
