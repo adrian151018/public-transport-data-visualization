@@ -10,25 +10,25 @@ export function fetchStatic(){
 
 export function loadStops(zipFile: JSZip){
     return zipFile.file("stops.txt")?.async('string')
-        .then(content => Papa.parse(content, {header: true}))        
+        .then(content => Papa.parse<Record <string, string>>(content, {header: true, skipEmptyLines: "greedy"}))        
 }
 
 export function loadServices(zipFile: JSZip){
     return zipFile.file("calendar_dates.txt")?.async('string')
-        .then(content => Papa.parse(content, {header: true}))
+        .then(content => Papa.parse<Record <string, string>>(content, {header: true, skipEmptyLines: "greedy"}))
 }
 
 export function loadTrips(zipFile: JSZip){
     return zipFile.file("trips.txt")?.async('string')
-        .then(content => Papa.parse(content, {header: true}))
+        .then(content => Papa.parse<Record <string, string>>(content, {header: true, skipEmptyLines: "greedy"}))
 }
 
 export function loadRoutes(zipFile: JSZip){
     return zipFile.file("routes.txt")?.async('string')
-        .then(content => Papa.parse(content, {header: true}))
+        .then(content => Papa.parse<Record <string, string>>(content, {header: true, skipEmptyLines: "greedy"}))
 }
 
 export function loadStopTimes(zipFile: JSZip){
     return zipFile.file("stop_times.txt")?.async('string')
-        .then(content => Papa.parse(content, {header: true}))
+        .then(content => Papa.parse<Record <string, string>>(content, {header: true, skipEmptyLines: "greedy"}))
 }
