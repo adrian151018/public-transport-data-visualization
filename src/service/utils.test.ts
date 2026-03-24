@@ -8,7 +8,7 @@ test("Testing getStopByCode() with valid stop code", () => {
         {stop_id: "A2545",stop_code: "2545", stop_name: "УЛ. ЛЕСНОВСКА РЕКА", stop_lat: "42.780941009521484", stop_lon: "23.392051696777344"}
     ];
 
-    const result = getStopByCode(stops, "2545");
+    const result = getStopByCode(stops, "");
     expect(result).toBeDefined();
     expect(result).toEqual(
         new Stop("A2545", "2545", "УЛ. ЛЕСНОВСКА РЕКА", 42.780941009521484, 23.392051696777344)
